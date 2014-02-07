@@ -7,19 +7,33 @@
 #
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 VERSION="ImageMagick-6.8.8-4"
-IMAGE_MAGICK="$DIR/imagemagick/$VERSION"
-JPGLIB="openjpeg-2.0.0"
-PNGLIB="libpng-1.6.9"
-TIFFLIB="tiff-4.0.3"
-DELLIB="$DIR/imagemagick/lib" # Delegate library.  Delegates are image format libraries
-
+INSTALL_LIB="$DIR/imagemagick"
+IMAGE_MAGICK="$INSTALL_LIB/$VERSION"
+OPEN_JPG_LIB="openjpeg-2.0.0"
+JPG_LIB="jpeg-9"
+JPG_GZ="jpegsrc.v9"
+PNG_LIB="libpng-1.6.9"
+TIFF_LIB="tiff-4.0.3"
 exit_err() {
   [ $# -gt 0 ] && echo "fatal: $*" 1>&2
   exit 1
 }
+makeClean() {
+	rm -rf $IMAGE_MAGICK
+	rm -rf $INSTALL_LIB/$JPG_LIB
+	rm -rf $INSTALL_LIB/$OPEN_JPG_LIB
+	rm -rf $INSTALL_LIB/$PNG_LIB
+	rm -rf $INSTALL_LIB/$TIFF_LIB
+}
 install() {
-#	installDelegates
+	makeClean
+	installDelegates
 	installImagemagick
+}
+installDelegates() {
+	installPngLib
+	installTiffLib
+	installJpgLib
 }
 installImagemagick() {
 	cd $DIR/imagemagick
@@ -28,58 +42,51 @@ installImagemagick() {
 	./configure \
 		LDFLAGS='-L/usr/local/lib' \
 		CPPFLAGS='-I/usr/local/lib' \
-		--prefix=/usr/local \
 		--with-quantum-depth=16 \
 		--disable-dependency-tracking \
 		--without-perl \
 		--with-png=yes \
 		--with-jpeg=yes \
 		--with-jp2=yes \
-		--with-tiff=yes \
-	make clean
-	make check
-	make
+		--with-tiff=yes
+	#make check
 	make install
 }
-
 installPngLib() {
 	# install png library
 	cd $DIR/imagemagick
-	tar xvzf $PNGLIB.tar.gz
-	cd $PNGLIB
+	tar xvzf $PNG_LIB.tar.gz
+	cd $PNG_LIB
 	./configure --prefix=/usr/local
-	make clean
-	make check
+	#make check
 	make install
 }
-
 installTiffLib() {
 	# install tiff library
 	cd $DIR/imagemagick
-	tar xvzf $TIFFLIB.tar.gz
-	cd $TIFFLIB
+	tar xvzf $TIFF_LIB.tar.gz
+	cd $TIFF_LIB
 	./configure --prefix=/usr/local
-	make clean
-	make check
+	#make check
 	make install
 }
-
 installJpgLib() {
+	cd $DIR/imagemagick
+	tar xvzf $JPG_GZ.tar.gz
+	cd  $JPG_LIB
+	./configure --prefix=/usr/local
+	make
+	make test
+	make install
+}
+installOpenJpegLib() {
 	# install jpeg library
 	cd $DIR/imagemagick
-	tar xvzf $JPGLIB.tar.gz
-	cd $JPGLIB
-	cmake .
-	make clean
-	make
-	make check
+	tar xvzf $OPEN_JPG_LIB.tar.gz
+	cd $OPEN_JPG_LIB
+	cmake -DCMAKE_INSTALL_PREFIX=/usr/local .
+	#make check
 	make install
-}
-
-installDelegates() {
-	installPngLib
-	installTiffLib
-	installJpgLib
 }
 jpgToTiff() {
 	SRC=$1
@@ -121,6 +128,8 @@ export DYLD_LIBRARY_PATH="$MAGICK_HOME/lib/"
 
 if [ "$CMD" = "install" ]; then
 	install
+elif [ "$CMD" = "makeClean" ]; then
+	makeClean
 elif [ "$CMD" = "jpgToTiff" ]; then
 	SRC=$(echo "$1" | sed 's/\/$//'); shift
 	OUT=$(echo "$1" | sed 's/\/$//'); shift

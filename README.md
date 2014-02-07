@@ -2,8 +2,9 @@
 ... a collection of image format conversion scripts that essentially make imagemagick more user friendly.
 
 # Requirements
-* Unix / Linux
-* GCC
+* Unix / Linux / Mac OSX
+* GCC aka "make"
+* cmake http://www.cmake.org/cmake/resources/software.html
 
 # Commands
 Install imgform

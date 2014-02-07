@@ -8,19 +8,78 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 VERSION="ImageMagick-6.8.8-4"
 IMAGE_MAGICK="$DIR/imagemagick/$VERSION"
+JPGLIB="openjpeg-2.0.0"
+PNGLIB="libpng-1.6.9"
+TIFFLIB="tiff-4.0.3"
+DELLIB="$DIR/imagemagick/lib" # Delegate library.  Delegates are image format libraries
 
 exit_err() {
   [ $# -gt 0 ] && echo "fatal: $*" 1>&2
   exit 1
 }
 install() {
+#	installDelegates
+	installImagemagick
+}
+installImagemagick() {
 	cd $DIR/imagemagick
-	mkdir $DIR/imagemagick/build
 	tar xvzf $VERSION.tar.gz
 	cd $IMAGE_MAGICK
-	./configure --prefix=$DIR/imagemagick/build --with-quantum-depth=16 --disable-dependency-tracking --without-perl
+	./configure \
+		LDFLAGS='-L/usr/local/lib' \
+		CPPFLAGS='-I/usr/local/lib' \
+		--prefix=/usr/local \
+		--with-quantum-depth=16 \
+		--disable-dependency-tracking \
+		--without-perl \
+		--with-png=yes \
+		--with-jpeg=yes \
+		--with-jp2=yes \
+		--with-tiff=yes \
+	make clean
+	make check
 	make
 	make install
+}
+
+installPngLib() {
+	# install png library
+	cd $DIR/imagemagick
+	tar xvzf $PNGLIB.tar.gz
+	cd $PNGLIB
+	./configure --prefix=/usr/local
+	make clean
+	make check
+	make install
+}
+
+installTiffLib() {
+	# install tiff library
+	cd $DIR/imagemagick
+	tar xvzf $TIFFLIB.tar.gz
+	cd $TIFFLIB
+	./configure --prefix=/usr/local
+	make clean
+	make check
+	make install
+}
+
+installJpgLib() {
+	# install jpeg library
+	cd $DIR/imagemagick
+	tar xvzf $JPGLIB.tar.gz
+	cd $JPGLIB
+	cmake .
+	make clean
+	make
+	make check
+	make install
+}
+
+installDelegates() {
+	installPngLib
+	installTiffLib
+	installJpgLib
 }
 jpgToTiff() {
 	SRC=$1
@@ -31,6 +90,9 @@ jpgToTiff() {
 jp2ToJpeg() {
 	SRC=$1
 	OUT=$2
+}
+config() {
+	convert -list configure
 }
 # Check the output path and make intermediate directories
 pathCheck() {
@@ -67,5 +129,7 @@ elif [ "$CMD" = "jp2ToJpeg" ]; then
 	SRC=$(echo "$1" | sed 's/\/$//'); shift
 	OUT=$(echo "$1" | sed 's/\/$//'); shift
 	jp2ToJpeg $SRC $OUT
+elif [ "$CMD" = "config" ]; then
+	config
 fi
 

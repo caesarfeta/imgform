@@ -1,15 +1,15 @@
 # imgform
-... a collection of image format conversion scripts that essentially make imagemagick more user friendly.
+Installer and a wrapper for ImageMagick. Simplifies batch image conversion tasks.
 
 # Requirements
-* Unix / Linux / Mac OSX
-* GCC aka "make"
+* Unix-like OS
+* make
 * cmake http://www.cmake.org/cmake/resources/software.html
 
 # Commands
 Install imgform
 
-	./imgform install
+	sudo ./imgform install
 
 Convert a jpeg to a tiled tiff
 

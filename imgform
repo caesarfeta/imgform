@@ -92,11 +92,25 @@ jpgToTiff() {
 	SRC=$1
 	OUT=$2
 	pathCheck $2
+	SRC_TYPE=$(fileType $1)
+	if [ "$SRC_TYPE" != "JPEG" ]; then
+		exit_err "Source file ${SRC} is not a jpeg."
+	fi
 	convert $SRC -compress jpeg -define tiff:tile-geometry=256x256 "ptif:${OUT}"
 }
 jp2ToJpeg() {
 	SRC=$1
 	OUT=$2
+	pathCheck $2
+}
+jp2ToTiff() {
+	SRC=$1
+	OUT=$2
+	pathCheck $2
+}
+fileType() {
+	TYPE=$(file $1 |tail -1|cut -d' ' -f2)
+	echo $TYPE
 }
 config() {
 	convert -list configure

@@ -107,6 +107,11 @@ jp2ToTiff() {
 	SRC=$1
 	OUT=$2
 	pathCheck $2
+	SRC_TYPE=$(fileType $1)
+	if [ "$SRC_TYPE" != "JPEG" ]; then
+		exit_err "Source file ${SRC} is not a jp2 file."
+	fi
+	convert $SRC -compress jpeg -define tiff:tile-geometry=256x256 "ptif:${OUT}"
 }
 fileType() {
 	TYPE=$(file $1 |tail -1|cut -d' ' -f2)
@@ -152,7 +157,13 @@ elif [ "$CMD" = "jp2ToJpeg" ]; then
 	SRC=$(echo "$1" | sed 's/\/$//'); shift
 	OUT=$(echo "$1" | sed 's/\/$//'); shift
 	jp2ToJpeg $SRC $OUT
+elif [ "$CMD" = "jp2ToTiff" ]; then
+	SRC=$(echo "$1" | sed 's/\/$//'); shift
+	OUT=$(echo "$1" | sed 's/\/$//'); shift
+	jp2ToTiff $SRC $OUT
 elif [ "$CMD" = "config" ]; then
 	config
+elif [ 1 -eq 1 ]; then
+	exit_err "Command ${CMD} not found"
 fi
 

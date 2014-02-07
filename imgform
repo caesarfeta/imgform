@@ -7,7 +7,7 @@
 #
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 VERSION="ImageMagick-6.8.8-4"
-IMAGE_MAGICK="$SCRIPT_DIR/imagemagick/$VERSION"
+IMAGE_MAGICK="$DIR/imagemagick/$VERSION"
 
 exit_err() {
   [ $# -gt 0 ] && echo "fatal: $*" 1>&2
@@ -15,18 +15,31 @@ exit_err() {
 }
 install() {
 	cd $DIR/imagemagick
+	mkdir $DIR/imagemagick/build
 	tar xvzf $VERSION.tar.gz
+	cd $IMAGE_MAGICK
+	./configure --prefix=$DIR/imagemagick/build --with-quantum-depth=16 --disable-dependency-tracking --without-perl
+	make
+	make install
 }
-uninstall() {
-	rm -rf $DIR/imagemagick/$VERSION
-}
-tiledtiff() {
+jpgToTiff() {
 	SRC=$1
 	OUT=$2
-	# CHECK OUTPUT PATH
+	pathCheck $2
+	convert $SRC -compress jpeg -define tiff:tile-geometry=256x256 "ptif:${OUT}"
 }
-outputpath() {
-	
+jp2ToJpeg() {
+	SRC=$1
+	OUT=$2
+}
+# Check the output path and make intermediate directories
+pathCheck() {
+	OUT=$1
+	OUTPATH=$( dirname $OUT )
+	if [ ! -d "$OUTPATH" ]; then
+		echo "Output directory not found.  New directory created at $OUTPATH"
+		mkdir -p $OUTPATH
+	fi
 }
 
 # What shall I do for you, sire?
@@ -38,14 +51,21 @@ if [ -z "$CMD" ]; then
 fi
 
 # Okay let's get configured...
-export MAGICK_HOME="$IMAGE_MAGICK"
+export MAGICK_HOME="$DIR/imagemagick/build"
 export PATH="$MAGICK_HOME/bin:$PATH"
 LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$MAGICK_HOME/lib"
 export LD_LIBRARY_PATH
+export DYLD_LIBRARY_PATH="$MAGICK_HOME/lib/"
 
-if [ "$CMD" = "tiledtiff" ]; then
+if [ "$CMD" = "install" ]; then
+	install
+elif [ "$CMD" = "jpgToTiff" ]; then
 	SRC=$(echo "$1" | sed 's/\/$//'); shift
 	OUT=$(echo "$1" | sed 's/\/$//'); shift
-	tiledtiff $SRC $OUT
+	jpgToTiff $SRC $OUT
+elif [ "$CMD" = "jp2ToJpeg" ]; then
+	SRC=$(echo "$1" | sed 's/\/$//'); shift
+	OUT=$(echo "$1" | sed 's/\/$//'); shift
+	jp2ToJpeg $SRC $OUT
 fi
 

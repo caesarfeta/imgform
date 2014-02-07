@@ -1,0 +1,51 @@
+#!/bin/sh
+#
+# Adam Tavares
+# Feb 7, 2014
+#
+# Convert images into different formats
+#
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+VERSION="ImageMagick-6.8.8-4"
+IMAGE_MAGICK="$SCRIPT_DIR/imagemagick/$VERSION"
+
+exit_err() {
+  [ $# -gt 0 ] && echo "fatal: $*" 1>&2
+  exit 1
+}
+install() {
+	cd $DIR/imagemagick
+	tar xvzf $VERSION.tar.gz
+}
+uninstall() {
+	rm -rf $DIR/imagemagick/$VERSION
+}
+tiledtiff() {
+	SRC=$1
+	OUT=$2
+	# CHECK OUTPUT PATH
+}
+outputpath() {
+	
+}
+
+# What shall I do for you, sire?
+CMD=$(echo "$1" | sed 's/\/$//'); shift
+
+# Well I gotta do something!
+if [ -z "$CMD" ]; then
+	exit_err "No command was specified"
+fi
+
+# Okay let's get configured...
+export MAGICK_HOME="$IMAGE_MAGICK"
+export PATH="$MAGICK_HOME/bin:$PATH"
+LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$MAGICK_HOME/lib"
+export LD_LIBRARY_PATH
+
+if [ "$CMD" = "tiledtiff" ]; then
+	SRC=$(echo "$1" | sed 's/\/$//'); shift
+	OUT=$(echo "$1" | sed 's/\/$//'); shift
+	tiledtiff $SRC $OUT
+fi
+

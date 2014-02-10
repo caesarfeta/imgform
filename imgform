@@ -11,6 +11,7 @@ INSTALL_LIB="$DIR/imagemagick"
 IMAGE_MAGICK="$INSTALL_LIB/$VERSION"
 OPEN_JPG_LIB="openjpeg-2.0.0"
 JPG_LIB="jpeg-9"
+JASPER="jasper-1.900.1"
 JPG_GZ="jpegsrc.v9"
 PNG_LIB="libpng-1.6.9"
 TIFF_LIB="tiff-4.0.3"
@@ -24,10 +25,15 @@ makeClean() {
 	rm -rf $INSTALL_LIB/$OPEN_JPG_LIB
 	rm -rf $INSTALL_LIB/$PNG_LIB
 	rm -rf $INSTALL_LIB/$TIFF_LIB
+	rm -rf $INSTALL_LIB/$JASPER
+}
+formats() {
+	convert -list configure | grep DELEGATES
 }
 install() {
 	makeClean
 	installDelegates
+	installJasper
 	installImagemagick
 }
 installDelegates() {
@@ -35,16 +41,33 @@ installDelegates() {
 	installTiffLib
 	installJpgLib
 }
+installJasper() {
+	cd $DIR/imagemagick
+	unzip $JASPER.zip
+	cd $JASPER
+	./configure --prefix=/usr/local
+	make check
+	make
+	make install
+}
 installImagemagick() {
 	cd $DIR/imagemagick
 	tar xvzf $VERSION.tar.gz
 	cd $IMAGE_MAGICK
 	./configure \
 		LDFLAGS='-L/usr/local/lib' \
-		CPPFLAGS='-I/usr/local/lib' \
+		CPPFLAGS='-I/usr/local/include' \
+		--enable-delegate-build \
+		--enable-shared \
+		--disable-static \
+		--disable-opencl \
+		#--with-modules \
 		--with-quantum-depth=16 \
+		--with-gslib \
+		--without-wmf \
+		--disable-silent-rules \
 		--disable-dependency-tracking \
-		--without-perl \
+		--with-perl=/usr/bin/perl \
 		--with-png=yes \
 		--with-jpeg=yes \
 		--with-jp2=yes \
@@ -102,6 +125,11 @@ jp2ToJpeg() {
 	SRC=$1
 	OUT=$2
 	pathCheck $2
+	SRC_TYPE=$(fileType $1)
+	if [ "$SRC_TYPE" != "JPEG" ]; then
+		exit_err "Source file ${SRC} is not a jp2 file."
+	fi
+	jasper -f $SRC -F $OUT -T jpg
 }
 jp2ToTiff() {
 	SRC=$1
@@ -163,6 +191,8 @@ elif [ "$CMD" = "jp2ToTiff" ]; then
 	jp2ToTiff $SRC $OUT
 elif [ "$CMD" = "config" ]; then
 	config
+elif [ "$CMD" = "formats" ]; then
+	formats
 elif [ 1 -eq 1 ]; then
 	exit_err "Command ${CMD} not found"
 fi

@@ -5,6 +5,10 @@
 #
 # Convert images into different formats
 #
+
+#-------------------------------------------------------------
+#  Configuration
+#-------------------------------------------------------------
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 VERSION="ImageMagick-6.8.8-4"
 INSTALL_LIB="$DIR/imagemagick"
@@ -15,21 +19,7 @@ JASPER="jasper-1.900.1"
 JPG_GZ="jpegsrc.v9"
 PNG_LIB="libpng-1.6.9"
 TIFF_LIB="tiff-4.0.3"
-exit_err() {
-  [ $# -gt 0 ] && echo "fatal: $*" 1>&2
-  exit 1
-}
-makeClean() {
-	rm -rf $IMAGE_MAGICK
-	rm -rf $INSTALL_LIB/$JPG_LIB
-	rm -rf $INSTALL_LIB/$OPEN_JPG_LIB
-	rm -rf $INSTALL_LIB/$PNG_LIB
-	rm -rf $INSTALL_LIB/$TIFF_LIB
-	rm -rf $INSTALL_LIB/$JASPER
-}
-formats() {
-	convert -list configure | grep DELEGATES
-}
+
 install() {
 	makeClean
 	installDelegates
@@ -61,7 +51,6 @@ installImagemagick() {
 		--enable-shared \
 		--disable-static \
 		--disable-opencl \
-		#--with-modules \
 		--with-quantum-depth=16 \
 		--with-gslib \
 		--without-wmf \
@@ -111,7 +100,11 @@ installOpenJpegLib() {
 	#make check
 	make install
 }
-jpgToTiff() {
+
+#-------------------------------------------------------------
+#  Convert jp2 file to tiff
+#-------------------------------------------------------------
+jp2_tiff() {
 	SRC=$1
 	OUT=$2
 	pathCheck $2
@@ -121,7 +114,11 @@ jpgToTiff() {
 	fi
 	convert $SRC -compress jpeg -define tiff:tile-geometry=256x256 "ptif:${OUT}"
 }
-jp2ToJpeg() {
+
+#-------------------------------------------------------------
+#  Convert jp2 file to jpeg
+#-------------------------------------------------------------
+jp2_jpeg() {
 	SRC=$1
 	OUT=$2
 	pathCheck $2
@@ -131,7 +128,11 @@ jp2ToJpeg() {
 	fi
 	jasper -f $SRC -F $OUT -T jpg
 }
-jp2ToTiff() {
+
+#-------------------------------------------------------------
+#  Convert jpg file to tiff
+#-------------------------------------------------------------
+jpg_tiff() {
 	SRC=$1
 	OUT=$2
 	pathCheck $2
@@ -141,14 +142,33 @@ jp2ToTiff() {
 	fi
 	convert $SRC -compress jpeg -define tiff:tile-geometry=256x256 "ptif:${OUT}"
 }
+
+#-------------------------------------------------------------
+#  Return filetype
+#-------------------------------------------------------------
 fileType() {
 	TYPE=$(file $1 |tail -1|cut -d' ' -f2)
 	echo $TYPE
 }
+
+#-------------------------------------------------------------
+#  Print ImageMagick config
+#-------------------------------------------------------------
 config() {
 	convert -list configure
 }
-# Check the output path and make intermediate directories
+
+#-------------------------------------------------------------
+#  Exit and print errors
+#-------------------------------------------------------------
+exit_err() {
+  [ $# -gt 0 ] && echo "fatal: $*" 1>&2
+  exit 1
+}
+
+#-------------------------------------------------------------
+#  Check the output path and make intermediate directories
+#-------------------------------------------------------------
 pathCheck() {
 	OUT=$1
 	OUTPATH=$( dirname $OUT )
@@ -158,42 +178,124 @@ pathCheck() {
 	fi
 }
 
-# What shall I do for you, sire?
+#-------------------------------------------------------------
+#  Remove build directories
+#-------------------------------------------------------------
+makeClean() {
+	rm -rf $IMAGE_MAGICK
+	rm -rf $INSTALL_LIB/$JPG_LIB
+	rm -rf $INSTALL_LIB/$OPEN_JPG_LIB
+	rm -rf $INSTALL_LIB/$PNG_LIB
+	rm -rf $INSTALL_LIB/$TIFF_LIB
+	rm -rf $INSTALL_LIB/$JASPER
+}
+
+#-------------------------------------------------------------
+#  List supported ImageMagick formats
+#-------------------------------------------------------------
+formats() {
+	convert -list configure | grep DELEGATES
+}
+
+#-------------------------------------------------------------
+#  What shall I do for you, sire?
+#-------------------------------------------------------------
 CMD=$(echo "$1" | sed 's/\/$//'); shift
 
-# Well I gotta do something!
+#-------------------------------------------------------------
+#  Well I gotta do something!
+#-------------------------------------------------------------
 if [ -z "$CMD" ]; then
 	exit_err "No command was specified"
 fi
 
-# Okay let's get configured...
+#-------------------------------------------------------------
+#  Okay let's get configured...
+#-------------------------------------------------------------
 export MAGICK_HOME="$DIR/imagemagick/build"
 export PATH="$MAGICK_HOME/bin:$PATH"
 LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$MAGICK_HOME/lib"
 export LD_LIBRARY_PATH
 export DYLD_LIBRARY_PATH="$MAGICK_HOME/lib/"
 
+#-------------------------------------------------------------
+#  Install all the image conversion code
+#-------------------------------------------------------------
 if [ "$CMD" = "install" ]; then
 	install
+	
+#-------------------------------------------------------------
+#  Remove build directories
+#-------------------------------------------------------------
 elif [ "$CMD" = "makeClean" ]; then
 	makeClean
-elif [ "$CMD" = "jpgToTiff" ]; then
+	
+#-------------------------------------------------------------
+#  Convert jp2 file to jpeg
+#-------------------------------------------------------------
+elif [ "$CMD" = "jp2_jpeg" ]; then
 	SRC=$(echo "$1" | sed 's/\/$//'); shift
 	OUT=$(echo "$1" | sed 's/\/$//'); shift
-	jpgToTiff $SRC $OUT
-elif [ "$CMD" = "jp2ToJpeg" ]; then
+	jp2_jpeg $SRC $OUT
+	
+#-------------------------------------------------------------
+#  Convert jp2 file to tiff
+#-------------------------------------------------------------
+elif [ "$CMD" = "jp2_tiff" ]; then
 	SRC=$(echo "$1" | sed 's/\/$//'); shift
 	OUT=$(echo "$1" | sed 's/\/$//'); shift
-	jp2ToJpeg $SRC $OUT
-elif [ "$CMD" = "jp2ToTiff" ]; then
+	jp2_tiff $SRC $OUT
+	
+#-------------------------------------------------------------
+#  Convert jpg file to tiff
+#-------------------------------------------------------------
+elif [ "$CMD" = "jpg_tiff" ]; then
 	SRC=$(echo "$1" | sed 's/\/$//'); shift
 	OUT=$(echo "$1" | sed 's/\/$//'); shift
-	jp2ToTiff $SRC $OUT
+	jpg_tiff $SRC $OUT
+	
+#-------------------------------------------------------------
+#  Print ImageMagick config
+#-------------------------------------------------------------
 elif [ "$CMD" = "config" ]; then
 	config
+	
+#-------------------------------------------------------------
+#  List supported ImageMagick formats
+#-------------------------------------------------------------
 elif [ "$CMD" = "formats" ]; then
 	formats
+	
+#-------------------------------------------------------------
+#  Feed a text file with image path sources
+#-------------------------------------------------------------
+elif [ "$CMD" = "text" ]; then
+	TXT=$(echo "$1" | sed 's/\/$//'); shift
+	FORMAT=$(echo "$1" | sed 's/\/$//'); shift
+	while read file
+	do
+		echo $file
+		#if [ "$FORMAT" = "jpg" ]; then
+		#elif [ "$FORMAT" = "png" ]; then
+		#elif [ "$FORMAT" = "tiff" ]; then
+		#fi
+	done < $TXT
+	
+#-------------------------------------------------------------
+#  Feed a text file with image path sources
+#-------------------------------------------------------------
+elif [ "$CMD" = "dir" ]; then
+	SRCDIR=$(echo "$1" | sed 's/\/$//'); shift
+	OUTDIR=$(echo "$1" | sed 's/\/$//'); shift
+	FORMAT=$(echo "$1" | sed 's/\/$//'); shift
+	while read file
+	do
+		echo $file
+	done < $(find $SRCDIR)
+	
+#-------------------------------------------------------------
+#  Command not found
+#-------------------------------------------------------------
 elif [ 1 -eq 1 ]; then
 	exit_err "Command ${CMD} not found"
 fi
-

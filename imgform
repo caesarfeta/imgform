@@ -118,7 +118,7 @@ jp2_tiff() {
 #-------------------------------------------------------------
 #  Convert jp2 file to jpeg
 #-------------------------------------------------------------
-jp2_jpeg() {
+jp2_jpg() {
 	SRC=$1
 	OUT=$2
 	pathCheck $2
@@ -233,10 +233,10 @@ elif [ "$CMD" = "makeClean" ]; then
 #-------------------------------------------------------------
 #  Convert jp2 file to jpeg
 #-------------------------------------------------------------
-elif [ "$CMD" = "jp2_jpeg" ]; then
+elif [ "$CMD" = "jp2_jpg" ]; then
 	SRC=$(echo "$1" | sed 's/\/$//'); shift
 	OUT=$(echo "$1" | sed 's/\/$//'); shift
-	jp2_jpeg $SRC $OUT
+	jp2_jpg $SRC $OUT
 	
 #-------------------------------------------------------------
 #  Convert jp2 file to tiff
@@ -275,10 +275,6 @@ elif [ "$CMD" = "text" ]; then
 	while read file
 	do
 		echo $file
-		#if [ "$FORMAT" = "jpg" ]; then
-		#elif [ "$FORMAT" = "png" ]; then
-		#elif [ "$FORMAT" = "tiff" ]; then
-		#fi
 	done < $TXT
 	
 #-------------------------------------------------------------
@@ -288,10 +284,22 @@ elif [ "$CMD" = "dir" ]; then
 	SRCDIR=$(echo "$1" | sed 's/\/$//'); shift
 	OUTDIR=$(echo "$1" | sed 's/\/$//'); shift
 	FORMAT=$(echo "$1" | sed 's/\/$//'); shift
-	while read file
+	pathCheck $OUTDIR
+	for path in $SRCDIR/*
 	do
-		echo $file
-	done < $(find $SRCDIR)
+		file=$(basename $path)
+		nopre=$( echo $file | cut -d\. -f1)
+		ext=$(echo $file | awk -F\. '{print $2}')
+		if [ "$ext" = "jp2" ]; then
+			if [ "$FORMAT" = "jpg" ]; then
+				jp2_jpg $path $OUTDIR/$nopre.$FORMAT
+			fi
+		elif [ "$ext" = "jpg" ]; then
+			if [ "$FORMAT" = "tiff" ]; then
+				jpg_tiff $path $OUTDIR/$nopre.$FORMAT
+			fi
+		fi
+	done
 	
 #-------------------------------------------------------------
 #  Command not found
